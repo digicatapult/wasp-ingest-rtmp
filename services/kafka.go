@@ -5,7 +5,7 @@ import (
 )
 
 type KafkaOperations interface {
-	SendMessage() error
+	SendMessage()
 }
 
 // KafkaService is a ..
@@ -19,14 +19,11 @@ type KafkaMessage struct {
 }
 
 func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
-
 	return &KafkaService{
 		ap: ap,
 	}
-
 }
 
-func (k *KafkaService) SendMessage() error {
+func (k *KafkaService) SendMessage() {
 
-	return nil
 }

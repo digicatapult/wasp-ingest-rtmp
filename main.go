@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+
 	"github.com/digicatapult/wasp-ingest-rtmp/services"
 )
 

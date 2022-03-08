@@ -1,10 +1,6 @@
 package main
 
 import (
-	"log"
-	"os"
-	"strings"
-
 	"github.com/Shopify/sarama"
 
 	"github.com/digicatapult/wasp-ingest-rtmp/services"
@@ -15,17 +11,17 @@ const (
 )
 
 func main() {
-	kafkaBrokers := os.Getenv(kafkaEnvVar)
+	// kafkaBrokers := os.Getenv(kafkaEnvVar)
 
-	producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
-	if err != nil {
-		log.Fatal(err)
-	}
+	// producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
+	// if err != nil {
+	// 	log.Fatal(err)
+	// }
 
-	kafka := services.NewKafkaService(producer)
-	videoIngest := services.NewVideoIngestService(kafka)
+	//kafka := services.NewKafkaService(producer)
+	videoIngest := services.NewVideoIngestService()
 
-	kafka.SendMessage()
+	// kafka.SendMessage()
 	videoIngest.IngestVideo()
 }
 

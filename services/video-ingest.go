@@ -16,12 +16,12 @@ func NewVideoIngestService() *VideoIngestService {
 // IngestVideo ...
 func (vs *VideoIngestService) IngestVideo() {
 	err := ffmpeg.Input("rtmp://172.16.80.40:1935/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk").
-		
+
 		// Output("output%03d.flv", ffmpeg.KwArgs{ "ssegment": "00:00:10","c:v": "copy",}).
 		// OverWriteOutput().ErrorToStdOut().Run()
 		
 		// This works and purely creates an FLV copy of the the stream
-		Output("output%03d.flv", ffmpeg.KwArgs{ "c:v": "copy",}).
+		Output("output.flv", ffmpeg.KwArgs{ "t" : 1,}).
 		OverWriteOutput().ErrorToStdOut().Run()
 		
 		//-c:v copy -c:a copy

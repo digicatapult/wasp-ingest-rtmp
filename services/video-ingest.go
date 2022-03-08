@@ -21,9 +21,12 @@ func (vs *VideoIngestService) IngestVideo() {
 		// OverWriteOutput().ErrorToStdOut().Run()
 		
 		// This works and purely creates an FLV copy of the the stream
-		Output("output.flv", ffmpeg.KwArgs{ "t" : 1,}).
+		Output("output.flv", ffmpeg.KwArgs{ "t" : 10,}).
 		OverWriteOutput().ErrorToStdOut().Run()
 		
+		// Chunk to 1 seconds
+		//Output("output.flv", ffmpeg.KwArgs{ "t" : 1,}).
+
 		//-c:v copy -c:a copy
 		//asegment=timestamps="60|150"
 

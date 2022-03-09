@@ -47,7 +47,7 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 	}
 
 	paritionStr := util.GetEnv(KafkaPartitionEnv, "1")
-	partitionInt, errParseInt := strconv.ParseInt(paritionStr, 10, 32)
+	partitionInt, errParseInt := strconv.Atoi(paritionStr)
 	if errParseInt != nil {
 		log.Fatalln(errParseInt)
 		return

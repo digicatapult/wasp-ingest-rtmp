@@ -20,8 +20,8 @@ func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
 
 func main() {
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
-	kafkaBrokers := util.GetEnv(KafkaBrokersEnv, "localhost:9092")
 
+	kafkaBrokers := util.GetEnv(KafkaBrokersEnv, "localhost:9092")
 	producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
 	if err != nil {
 		panic(err)

@@ -1,6 +1,6 @@
 # wasp-ingest-rtmp
 
-## Development
+## Getting Started
 
 ### Requirements
 

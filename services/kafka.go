@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"log"
 	"os"
-	"strconv"
 	"time"
 
 	"github.com/Shopify/sarama"
@@ -12,8 +11,7 @@ import (
 )
 
 const (
-	KafkaTopicEnv     = "KAFKA_TOPIC"
-	KafkaPartitionEnv = "KAFKA_PARTITION"
+	KafkaTopicEnv = "KAFKA_TOPIC"
 )
 
 type KafkaOperations interface {
@@ -46,18 +44,10 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 		return
 	}
 
-	paritionStr := util.GetEnv(KafkaPartitionEnv, "1")
-	partitionInt, errParseInt := strconv.Atoi(paritionStr)
-	if errParseInt != nil {
-		log.Fatalln(errParseInt)
-		return
-	}
-
 	msg := &sarama.ProducerMessage{
-		Topic:     util.GetEnv(KafkaTopicEnv, "raw-payloads"),
-		Partition: int32(partitionInt),
-		Key:       sarama.StringEncoder(mKey),
-		Value:     sarama.StringEncoder(mValueMarshalled),
+		Topic: util.GetEnv(KafkaTopicEnv, "raw-payloads"),
+		Key:   sarama.StringEncoder(mKey),
+		Value: sarama.StringEncoder(mValueMarshalled),
 	}
 
 	var enqueued, errors int

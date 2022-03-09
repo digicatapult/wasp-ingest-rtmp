@@ -2,7 +2,6 @@ package services
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/Shopify/sarama"
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 	"log"
@@ -42,14 +41,14 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 	mValueMarshal := &mValue
 	mValueMarshalled, errJsonMarshal := json.Marshal(mValueMarshal)
 	if errJsonMarshal != nil {
-		fmt.Println(errJsonMarshal)
+		log.Fatalln(errJsonMarshal)
 		return
 	}
 
 	paritionStr := util.GetEnv(KafkaPartitionEnv, "1")
 	partitionInt, errParseInt := strconv.ParseInt(paritionStr, 10, 32)
 	if errParseInt != nil {
-		fmt.Println(errParseInt)
+		log.Fatalln(errParseInt)
 		return
 	}
 
@@ -71,7 +70,7 @@ ProducerLoop:
 			enqueued++
 			log.Println("New Message produced")
 		case err := <-k.ap.Errors():
-			log.Println("Failed to produce message", err)
+			log.Fatalln("Failed to produce message", err)
 			errors++
 		case <-signals:
 			break ProducerLoop

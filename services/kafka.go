@@ -10,10 +10,6 @@ import (
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
-const (
-	KafkaTopicEnv = "KAFKA_TOPIC"
-)
-
 type KafkaOperations interface {
 	SendMessage()
 }
@@ -45,7 +41,7 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic: util.GetEnv(KafkaTopicEnv, "raw-payloads"),
+		Topic: util.GetEnv(util.KafkaTopicEnv, "raw-payloads"),
 		Key:   sarama.StringEncoder(mKey),
 		Value: sarama.StringEncoder(mValueMarshalled),
 	}

@@ -11,10 +11,6 @@ import (
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
-const (
-	KafkaBrokersEnv = "KAFKA_BROKERS"
-)
-
 func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
 	return sarama.NewAsyncProducer(kafkaBrokers, nil)
 }
@@ -22,7 +18,7 @@ func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
 func main() {
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 
-	kafkaBrokers := util.GetEnv(KafkaBrokersEnv, "localhost:9092")
+	kafkaBrokers := util.GetEnv(util.KafkaBrokersEnv, "localhost:9092")
 	producer, errProducer := setupProducer(strings.Split(kafkaBrokers, ","))
 	if errProducer != nil {
 		panic(errProducer)

@@ -2,12 +2,13 @@ package services
 
 import (
 	"encoding/json"
-	"github.com/Shopify/sarama"
-	"github.com/digicatapult/wasp-ingest-rtmp/util"
 	"log"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/Shopify/sarama"
+	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
 const (

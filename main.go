@@ -43,7 +43,7 @@ func main() {
 	messageKey := "01000000-0000-4000-8883-c7df300514ed"
 	messageValue := services.KafkaMessage{
 		Ingest:    "rtmp",
-		IngestId:  "4883C7DF300514ED",
+		IngestID:  "4883C7DF300514ED",
 		Timestamp: "2021-08-31T14:51:36.507Z",
 		Payload:   "",
 		Metadata:  "{}",

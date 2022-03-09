@@ -26,7 +26,7 @@ type KafkaService struct {
 
 type KafkaMessage struct {
 	Ingest    string `json:"ingest"`
-	IngestId  string `json:"ingestId"`
+	IngestID  string `json:"ingestId"`
 	Timestamp string `json:"timestamp"`
 	Payload   string `json:"payload"`
 	Metadata  string `json:"metadata"`
@@ -40,9 +40,9 @@ func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
 
 func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal) {
 	mValueMarshal := &mValue
-	mValueMarshalled, errJsonMarshal := json.Marshal(mValueMarshal)
-	if errJsonMarshal != nil {
-		log.Fatalln(errJsonMarshal)
+	mValueMarshalled, errJSONMarshal := json.Marshal(mValueMarshal)
+	if errJSONMarshal != nil {
+		log.Fatalln(errJSONMarshal)
 		return
 	}
 

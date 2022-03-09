@@ -1,44 +1,76 @@
 package services
 
 import (
+	"encoding/json"
+	"fmt"
 	"github.com/Shopify/sarama"
 	"log"
 	"os"
+	"strconv"
 	"time"
 )
+
+const (
+	KafkaTopicEnv     = "KAFKA_TOPIC"
+	KafkaPartitionEnv = "KAFKA_PARTITION"
+)
+
+var (
+	kafkaTopic     = getEnv(KafkaTopicEnv, "raw-payloads")
+	kafkaPartition = getEnv(KafkaPartitionEnv, "1")
+)
+
+func getEnv(key, defaultValue string) string {
+	if value, ok := os.LookupEnv(key); ok {
+		return value
+	}
+
+	return defaultValue
+}
 
 type KafkaOperations interface {
 	SendMessage()
 }
 
-// KafkaService is a ..
 type KafkaService struct {
 	ap sarama.AsyncProducer
 }
 
 type KafkaMessage struct {
-	Name  string
-	Value string
+	Ingest    string `json:"ingest"`
+	IngestId  string `json:"ingestId"`
+	Timestamp string `json:"timestamp"`
+	Payload   string `json:"payload"`
+	Metadata  string `json:"metadata"`
 }
 
 func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
+
 	return &KafkaService{
 		ap: ap,
 	}
 }
 
-func (k *KafkaService) ProducerMessage(km KafkaMessage, signals chan os.Signal) {
-	log.Println("Producer message km.Name", km.Name)
-	log.Println("Producer message km.Value", km.Value)
-
-	// Now, we set the Partition field of the ProducerMessage struct.
-	msg := &sarama.ProducerMessage{
-		Topic:     "raw-payloads",
-		Partition: 1,
-		Key:       sarama.StringEncoder(km.Name),
-		Value:     sarama.StringEncoder(km.Value),
+func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal) {
+	mValueMarshal := &mValue
+	mValueMarshalled, err := json.Marshal(mValueMarshal)
+	if err != nil {
+		fmt.Println(err)
+		return
 	}
-	log.Println("Producer message", msg)
+
+	partitionInt, err := strconv.ParseInt(kafkaPartition, 10, 32)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
+	msg := &sarama.ProducerMessage{
+		Topic:     kafkaTopic,
+		Partition: int32(partitionInt),
+		Key:       sarama.StringEncoder(mKey),
+		Value:     sarama.StringEncoder(mValueMarshalled),
+	}
 
 	var enqueued, errors int
 

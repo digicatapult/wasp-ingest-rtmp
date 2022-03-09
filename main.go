@@ -7,7 +7,6 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	"time"
 )
 
 const (
@@ -22,24 +21,13 @@ func getEnv(key, defaultValue string) string {
 	return defaultValue
 }
 
-// setupProducer will create a AsyncProducer and returns it.
 func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
-	config := sarama.NewConfig()
-	config.Producer.Flush.Frequency = 500 * time.Millisecond
-	config.Producer.Flush.Messages = 1
-	//config.Producer.Partitioner = sarama.NewRoundRobinPartitioner
-	//config.ChannelBufferSize = ka
-	//config.Producer.RequiredAcks = sarama.WaitForAll
-	//config.Producer.Return.Successes = true
-	//config.Producer.Partitioner = sarama.NewManualPartitioner
-
-	return sarama.NewAsyncProducer(kafkaBrokers, config)
+	return sarama.NewAsyncProducer(kafkaBrokers, nil)
 }
 
 func main() {
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 	kafkaBrokers := getEnv(KafkaBrokersEnv, "localhost:9092")
-	log.Println("kafkaBrokers", kafkaBrokers)
 
 	producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
 	if err != nil {
@@ -57,10 +45,17 @@ func main() {
 	signal.Notify(signals, os.Interrupt)
 
 	kafka := services.NewKafkaService(producer)
-	//videoIngest := services.NewVideoIngestService(kafka)
 
-	kafkaMessage := services.KafkaMessage{Name: "First", Value: "Message"}
+	messageKey := "01000000-0000-4000-8883-c7df300514ed"
+	messageValue := services.KafkaMessage{
+		Ingest:    "rtmp",
+		IngestId:  "4883C7DF300514ED",
+		Timestamp: "2021-08-31T14:51:36.507Z",
+		Payload:   "",
+		Metadata:  "{}",
+	}
 
-	kafka.ProducerMessage(kafkaMessage, signals)
+	kafka.SendMessage(messageKey, messageValue, signals)
+
 	//videoIngest.IngestVideo()
 }

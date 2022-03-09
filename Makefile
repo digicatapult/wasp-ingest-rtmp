@@ -1,5 +1,5 @@
 
-.PHONY: build lint
+.PHONY: build lint test
 
 build:
 	@go build ./...

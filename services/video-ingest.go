@@ -27,9 +27,10 @@ func (vs *VideoIngestService) IngestVideo() {
 				"segment_format_options=movflags=+faststart"},
 			ffmpeg.KwArgs{
 				"reset_timestamps": 1,
+				"filename" : "output_%03d.flv",
 			},
 		).
-		Output("output%03d.mp4")
+		Output("output_%03d.flv" )
 		// OverWriteOutput().ErrorToStdOut().Run()
 
 		// This works and purely creates an FLV copy of the the stream

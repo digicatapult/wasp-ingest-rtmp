@@ -40,16 +40,16 @@ func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
 
 func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal) {
 	mValueMarshal := &mValue
-	mValueMarshalled, err := json.Marshal(mValueMarshal)
-	if err != nil {
-		fmt.Println(err)
+	mValueMarshalled, errJsonMarshal := json.Marshal(mValueMarshal)
+	if errJsonMarshal != nil {
+		fmt.Println(errJsonMarshal)
 		return
 	}
 
 	paritionStr := util.GetEnv(KafkaPartitionEnv, "1")
-	partitionInt, err := strconv.ParseInt(paritionStr, 10, 32)
-	if err != nil {
-		fmt.Println(err)
+	partitionInt, errParseInt := strconv.ParseInt(paritionStr, 10, 32)
+	if errParseInt != nil {
+		fmt.Println(errParseInt)
 		return
 	}
 

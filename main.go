@@ -1,13 +1,14 @@
 package main
 
 import (
-	"github.com/Shopify/sarama"
-	"github.com/digicatapult/wasp-ingest-rtmp/services"
-	"github.com/digicatapult/wasp-ingest-rtmp/util"
 	"log"
 	"os"
 	"os/signal"
 	"strings"
+
+	"github.com/Shopify/sarama"
+	"github.com/digicatapult/wasp-ingest-rtmp/services"
+	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
 const (
@@ -22,9 +23,9 @@ func main() {
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 
 	kafkaBrokers := util.GetEnv(KafkaBrokersEnv, "localhost:9092")
-	producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
-	if err != nil {
-		panic(err)
+	producer, errProducer := setupProducer(strings.Split(kafkaBrokers, ","))
+	if errProducer != nil {
+		panic(errProducer)
 	}
 
 	defer func() {
@@ -50,5 +51,5 @@ func main() {
 
 	kafka.SendMessage(messageKey, messageValue, signals)
 
-	//videoIngest.IngestVideo()
+	// videoIngest.IngestVideo()
 }

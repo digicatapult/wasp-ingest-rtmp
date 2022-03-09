@@ -32,5 +32,6 @@ func main() {
 // setupProducer will create a AsyncProducer and returns it.
 func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
 	config := sarama.NewConfig()
+
 	return sarama.NewAsyncProducer(kafkaBrokers, config)
 }

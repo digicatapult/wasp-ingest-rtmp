@@ -5,12 +5,10 @@ import (
 )
 
 // Payload defines the data contained in
-type Payload struct {
-}
+type Payload struct{}
 
 type KafkaOperations interface {
 	SendMessage()
-
 	PayloadQueue() chan<- *Payload
 }
 
@@ -29,11 +27,12 @@ type KafkaMessage struct {
 func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
 	return &KafkaService{
 		ap: ap,
+
+		payloads: make(chan *Payload),
 	}
 }
 
 func (k *KafkaService) SendMessage() {
-
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending

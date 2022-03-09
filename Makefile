@@ -4,6 +4,10 @@
 build:
 	@go build ./...
 
+cleanbuild:
+	@go clean
+	@go build ./...
+
 lint:
 	@golangci-lint run .
 

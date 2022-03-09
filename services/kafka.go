@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/Shopify/sarama"
+	"github.com/digicatapult/wasp-ingest-rtmp/util"
 	"log"
 	"os"
 	"strconv"
@@ -14,19 +15,6 @@ const (
 	KafkaTopicEnv     = "KAFKA_TOPIC"
 	KafkaPartitionEnv = "KAFKA_PARTITION"
 )
-
-var (
-	kafkaTopic     = getEnv(KafkaTopicEnv, "raw-payloads")
-	kafkaPartition = getEnv(KafkaPartitionEnv, "1")
-)
-
-func getEnv(key, defaultValue string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-
-	return defaultValue
-}
 
 type KafkaOperations interface {
 	SendMessage()
@@ -45,7 +33,6 @@ type KafkaMessage struct {
 }
 
 func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
-
 	return &KafkaService{
 		ap: ap,
 	}
@@ -59,14 +46,15 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 		return
 	}
 
-	partitionInt, err := strconv.ParseInt(kafkaPartition, 10, 32)
+	paritionStr := util.GetEnv(KafkaPartitionEnv, "1")
+	partitionInt, err := strconv.ParseInt(paritionStr, 10, 32)
 	if err != nil {
 		fmt.Println(err)
 		return
 	}
 
 	msg := &sarama.ProducerMessage{
-		Topic:     kafkaTopic,
+		Topic:     util.GetEnv(KafkaTopicEnv, "raw-payloads"),
 		Partition: int32(partitionInt),
 		Key:       sarama.StringEncoder(mKey),
 		Value:     sarama.StringEncoder(mValueMarshalled),

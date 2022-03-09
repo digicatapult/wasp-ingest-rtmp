@@ -3,6 +3,7 @@ package main
 import (
 	"github.com/Shopify/sarama"
 	"github.com/digicatapult/wasp-ingest-rtmp/services"
+	"github.com/digicatapult/wasp-ingest-rtmp/util"
 	"log"
 	"os"
 	"os/signal"
@@ -13,21 +14,13 @@ const (
 	KafkaBrokersEnv = "KAFKA_BROKERS"
 )
 
-func getEnv(key, defaultValue string) string {
-	if value, ok := os.LookupEnv(key); ok {
-		return value
-	}
-
-	return defaultValue
-}
-
 func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
 	return sarama.NewAsyncProducer(kafkaBrokers, nil)
 }
 
 func main() {
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
-	kafkaBrokers := getEnv(KafkaBrokersEnv, "localhost:9092")
+	kafkaBrokers := util.GetEnv(KafkaBrokersEnv, "localhost:9092")
 
 	producer, err := setupProducer(strings.Split(kafkaBrokers, ","))
 	if err != nil {

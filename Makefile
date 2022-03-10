@@ -2,14 +2,14 @@
 .PHONY: build lint test
 
 build:
-	@go build ./...
+	@go build
 
 cleanbuild:
 	@go clean
-	@go build ./...
+	@go build
 
 lint:
-	@golangci-lint run .
+	@golangci-lint run
 
 test:
 	@go test ./...

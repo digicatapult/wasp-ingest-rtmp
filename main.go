@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/Shopify/sarama"
+
 	"github.com/digicatapult/wasp-ingest-rtmp/services"
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
@@ -47,5 +48,6 @@ func main() {
 
 	kafka.SendMessage(messageKey, messageValue, signals)
 
+	// videoIngest := services.NewVideoIngestService()
 	// videoIngest.IngestVideo()
 }

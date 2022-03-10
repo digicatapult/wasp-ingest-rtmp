@@ -1,6 +1,7 @@
 package services
 
 import (
+	"errors"
 	"io"
 	"log"
 
@@ -8,9 +9,7 @@ import (
 )
 
 // VideoIngestService is a video ingest service
-type VideoIngestService struct {
-	ks KafkaOperations
-}
+type VideoIngestService struct{}
 
 // NewVideoIngestService instantiates a new instance
 func NewVideoIngestService() *VideoIngestService {
@@ -23,16 +22,17 @@ func (vs *VideoIngestService) IngestVideo() {
 
 	go func() {
 		frameSize := 1000
-		buf := make([]byte, frameSize, frameSize)
+		buf := make([]byte, frameSize)
 		for {
 			n, err := io.ReadFull(pipeReader, buf)
-			if n == 0 || err == io.EOF {
+			switch {
+			case n == 0 || errors.Is(err, io.EOF):
 				log.Println("nothing found")
 				return
-			} else if n != frameSize {
-				log.Println("end of stream: %d, %s", n, err)
-			} else if err != nil {
-				log.Println("read error: %d, %s", n, err)
+			case n != frameSize:
+				log.Printf("end of stream: %d, %s\n", n, err)
+			case err != nil:
+				log.Printf("read error: %d, %s\n", n, err)
 			}
 
 			payload := struct {
@@ -42,7 +42,7 @@ func (vs *VideoIngestService) IngestVideo() {
 				ID:   "the-stream-identifier",
 				Data: buf,
 			}
-			log.Println(payload.Data)
+			log.Println(payload)
 			// vs.ks.PayloadQueue() <- &payload
 		}
 	}()

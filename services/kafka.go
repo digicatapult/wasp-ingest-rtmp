@@ -7,11 +7,13 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
 type KafkaOperations interface {
 	SendMessage()
+	PayloadQueue() chan<- interface{}
 }
 
 type KafkaService struct {

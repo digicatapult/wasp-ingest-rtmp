@@ -375,6 +375,7 @@ linters:
   #   - unparam
   #   - unconvert
   disable:
+    - exhaustivestruct
     - ireturn
     - godot
     - golint

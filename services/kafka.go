@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/Shopify/sarama"
+
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
@@ -47,9 +48,11 @@ func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
 // SendMessage can send a message to the
 func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal) {
 	mValueMarshal := &mValue
+
 	mValueMarshalled, errJSONMarshal := json.Marshal(mValueMarshal)
 	if errJSONMarshal != nil {
 		log.Fatalln(errJSONMarshal)
+
 		return
 	}
 

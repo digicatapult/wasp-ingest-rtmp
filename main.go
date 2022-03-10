@@ -57,12 +57,8 @@ func main() {
 		Metadata:  "{}",
 	}
 
-<<<<<<< HEAD
-=======
 	kafka.SendMessage(messageKey, messageValue, signals)
 
 	// videoIngest := services.NewVideoIngestService()
->>>>>>> main
 	// videoIngest.IngestVideo()
-	kafka.SendMessage(messageKey, messageValue, signals)
 }

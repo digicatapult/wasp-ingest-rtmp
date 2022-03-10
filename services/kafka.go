@@ -12,7 +12,11 @@ import (
 )
 
 // Payload defines the data contained in
-type Payload struct{}
+type Payload struct {
+	ID      string
+	FrameNo int
+	Data    []byte
+}
 
 // KafkaOperations defines operations for kafka messaging
 type KafkaOperations interface {

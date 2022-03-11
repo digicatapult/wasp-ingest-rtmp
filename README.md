@@ -24,6 +24,16 @@ make build
 ```
 make test
 ```
+Docker
+```
+docker build -t nginx-rtmp .
+docker run -p 1935:1935 -p 8080:8080 -it nginx-rtmp:latest
+```
+set rtmp streaming device to rtmp://<your ip>:1935/stream/whatever
+```
+ffplay -fflags nobuffer -analyzeduration 0 -fast rtmp://localhost:1935/stream/whatever
+```
+Stats are available on http://localhost:8080/stats
 
 ### Linting
 

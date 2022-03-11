@@ -33,6 +33,7 @@ set rtmp streaming device to rtmp://<your ip>:1935/stream/whatever
 ```
 ffplay -fflags nobuffer -analyzeduration 0 -fast rtmp://localhost:1935/stream/whatever
 ```
+Stats are available on http://localhost:8080/stats
 
 ### Linting
 

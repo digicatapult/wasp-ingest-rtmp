@@ -2,11 +2,17 @@ module github.com/digicatapult/wasp-ingest-rtmp
 
 go 1.17
 
-require github.com/Shopify/sarama v1.32.0
+require (
+	github.com/Shopify/sarama v1.32.0
+	github.com/pkg/errors v0.9.1
+	go.uber.org/zap v1.21.0
+)
 
 require (
 	github.com/aws/aws-sdk-go v1.38.20 // indirect
 	github.com/u2takey/go-utils v0.0.0-20200713025200-4704d09fc2c7 // indirect
+	go.uber.org/atomic v1.9.0 // indirect
+	go.uber.org/multierr v1.8.0 // indirect
 )
 
 require (

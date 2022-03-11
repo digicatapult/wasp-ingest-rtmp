@@ -1,8 +1,10 @@
 package services
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"log"
+	"sync"
 
 	"github.com/Shopify/sarama"
 
@@ -19,7 +21,8 @@ type Payload struct {
 // KafkaOperations defines operations for kafka messaging
 type KafkaOperations interface {
 	SendMessage(mKey string, mValue KafkaMessage)
-	PayloadQueue() chan *Payload
+	StartBackgroundSend(*sync.WaitGroup, chan bool)
+	PayloadQueue() chan<- *Payload
 }
 
 // KafkaService implements kafka message functionality
@@ -73,6 +76,32 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage) {
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending
-func (k *KafkaService) PayloadQueue() chan *Payload {
+func (k *KafkaService) PayloadQueue() chan<- *Payload {
 	return k.payloads
+}
+
+// StartBackgroundSend will start the background sender
+func (k *KafkaService) StartBackgroundSend(wg *sync.WaitGroup, shutdown chan bool) {
+	for {
+		select {
+		case pl := <-k.payloads:
+			log.Printf("Received video chunk: %d - %d", pl.FrameNo, len(pl.Data))
+
+			messageKey := "01000000-0000-4000-8883-c7df300514ed"
+			messageValue := KafkaMessage{
+				Ingest:    "rtmp",
+				IngestID:  "4883C7DF300514ED",
+				Timestamp: "2021-08-31T14:51:36.507Z",
+				Payload:   base64.StdEncoding.EncodeToString(pl.Data),
+				Metadata:  "{}",
+			}
+			// log.Printf("Encoded data: %s\n", messageValue.Payload)
+
+			k.SendMessage(messageKey, messageValue)
+			wg.Done()
+		case <-shutdown:
+			log.Println("closing the background send")
+			return
+		}
+	}
 }

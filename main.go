@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/base64"
 	"log"
 	"os"
 	"strings"
@@ -43,26 +42,6 @@ func main() {
 	}()
 
 	kafka := services.NewKafkaService(producer)
-
-	go func() {
-		for {
-			pl := <-kafka.PayloadQueue()
-
-			log.Printf("Received video chunk: %d - %d", pl.FrameNo, len(pl.Data))
-
-			messageKey := "01000000-0000-4000-8883-c7df300514ed"
-			messageValue := services.KafkaMessage{
-				Ingest:    "rtmp",
-				IngestID:  "4883C7DF300514ED",
-				Timestamp: "2021-08-31T14:51:36.507Z",
-				Payload:   base64.StdEncoding.EncodeToString(pl.Data),
-				Metadata:  "{}",
-			}
-			log.Printf("Encoded data: %s\n", messageValue.Payload)
-
-			kafka.SendMessage(messageKey, messageValue)
-		}
-	}()
 
 	videoIngest := services.NewVideoIngestService(kafka)
 	videoIngest.IngestVideo()

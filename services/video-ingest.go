@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"log"
+	"sync"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 )
@@ -23,6 +24,11 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo() {
 	pipeReader, pipeWriter := io.Pipe()
+	wg := &sync.WaitGroup{}
+
+	shutdown := make(chan bool)
+
+	go vs.ks.StartBackgroundSend(wg, shutdown)
 
 	go func() {
 		frameSize := 1000
@@ -52,6 +58,7 @@ func (vs *VideoIngestService) IngestVideo() {
 			}
 
 			log.Printf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			wg.Add(1)
 			vs.ks.PayloadQueue() <- payload
 		}
 	}()
@@ -60,7 +67,7 @@ func (vs *VideoIngestService) IngestVideo() {
 
 	go func() {
 		err := ffmpeg.Input("rtmp://192.168.68.119:1935/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk").
-			Output("pipe:", ffmpeg.KwArgs{"f": "rawvideo"}).
+			Output("pipe:", ffmpeg.KwArgs{"f": "h264"}).
 			WithOutput(pipeWriter).
 			Run()
 		if err != nil {
@@ -70,5 +77,7 @@ func (vs *VideoIngestService) IngestVideo() {
 	}()
 
 	err := <-done
-	log.Printf("Done: %s\n", err)
+	log.Printf("Done (waiting for completion of send): %s\n", err)
+	wg.Wait()
+	shutdown <- true
 }

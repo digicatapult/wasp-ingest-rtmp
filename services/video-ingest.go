@@ -42,12 +42,16 @@ func (vs *VideoIngestService) IngestVideo() {
 				log.Printf("read error: %d, %s\n", n, err)
 			}
 
+			new := make([]byte, frameSize)
+			copy(new, buf)
+
 			payload := &Payload{
 				ID:      "the-stream-identifier",
 				FrameNo: frameCount * frameSize,
-				Data:    buf,
+				Data:    new,
 			}
 
+			log.Printf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 			vs.ks.PayloadQueue() <- payload
 		}
 	}()
@@ -61,8 +65,8 @@ func (vs *VideoIngestService) IngestVideo() {
 			Run()
 		if err != nil {
 			log.Fatalf("problem with ffmpeg: %v\n", err)
-			done <- err
 		}
+		done <- err
 	}()
 
 	err := <-done

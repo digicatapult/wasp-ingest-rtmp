@@ -20,8 +20,8 @@ type Payload struct {
 
 // KafkaOperations defines operations for kafka messaging
 type KafkaOperations interface {
-	SendMessage()
-	PayloadQueue() chan<- *Payload
+	SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal)
+	PayloadQueue() chan *Payload
 }
 
 // KafkaService implements kafka message functionality
@@ -88,6 +88,6 @@ ProducerLoop:
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending
-func (k *KafkaService) PayloadQueue() chan<- *Payload {
+func (k *KafkaService) PayloadQueue() chan *Payload {
 	return k.payloads
 }

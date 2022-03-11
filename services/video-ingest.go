@@ -3,10 +3,10 @@ package services
 import (
 	"errors"
 	"io"
-	"log"
 	"sync"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
+	"go.uber.org/zap"
 )
 
 // VideoIngestService is a video ingest service
@@ -41,13 +41,13 @@ func (vs *VideoIngestService) IngestVideo() {
 
 			switch {
 			case count == 0 || errors.Is(err, io.EOF):
-				log.Println("nothing found")
+				zap.S().Info("nothing found")
 
 				return
 			case count != frameSize:
-				log.Printf("end of stream: %d, %s\n", count, err)
+				zap.S().Infof("end of stream: %d, %s", count, err)
 			case err != nil:
-				log.Printf("read error: %d, %s\n", count, err)
+				zap.S().Infof("read error: %d, %s", count, err)
 			}
 
 			bufCopy := make([]byte, frameSize)
@@ -59,7 +59,7 @@ func (vs *VideoIngestService) IngestVideo() {
 				Data:    bufCopy,
 			}
 
-			log.Printf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			zap.S().Infof("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 			videoSendWaitGroup.Add(1)
 			vs.ks.PayloadQueue() <- payload
 		}
@@ -73,13 +73,13 @@ func (vs *VideoIngestService) IngestVideo() {
 			WithOutput(pipeWriter).
 			Run()
 		if err != nil {
-			log.Fatalf("problem with ffmpeg: %v\n", err)
+			zap.S().Fatalf("problem with ffmpeg: %v", err)
 		}
 		done <- err
 	}()
 
 	err := <-done
-	log.Printf("Done (waiting for completion of send): %s\n", err)
+	zap.S().Infof("Done (waiting for completion of send): %s", err)
 	videoSendWaitGroup.Wait()
 	shutdown <- true
 }

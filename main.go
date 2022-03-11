@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	"os"
 	"strings"
 
@@ -34,7 +33,7 @@ func main() {
 		if err != nil {
 			panic("invalid log level")
 		}
-		log.Printf("setting level: %s\n", lvl.String())
+		zap.S().Infof("setting level: %s", lvl.String())
 		cfg.Level = lvl
 	}
 	logger, err := cfg.Build()
@@ -55,7 +54,7 @@ func main() {
 
 	defer func() {
 		if err := producer.Close(); err != nil {
-			log.Fatalln(err)
+			zap.S().Fatal(err)
 		}
 	}()
 

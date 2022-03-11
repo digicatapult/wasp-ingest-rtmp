@@ -4,7 +4,6 @@ import (
 	"encoding/base64"
 	"log"
 	"os"
-	"os/signal"
 	"strings"
 
 	"github.com/Shopify/sarama"
@@ -14,13 +13,13 @@ import (
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
-func setupProducer(kafkaBrokers []string) (sarama.AsyncProducer, error) {
+func setupProducer(kafkaBrokers []string) (sarama.SyncProducer, error) {
 	var (
-		producer sarama.AsyncProducer
+		producer sarama.SyncProducer
 		err      error
 	)
 
-	if producer, err = sarama.NewAsyncProducer(kafkaBrokers, nil); err != nil {
+	if producer, err = sarama.NewSyncProducer(kafkaBrokers, nil); err != nil {
 		return producer, errors.Wrap(err, "problem initiating producer")
 	}
 
@@ -43,10 +42,6 @@ func main() {
 		}
 	}()
 
-	// Trap SIGINT to trigger a graceful shutdown.
-	signals := make(chan os.Signal, 1)
-	signal.Notify(signals, os.Interrupt)
-
 	kafka := services.NewKafkaService(producer)
 
 	go func() {
@@ -65,7 +60,7 @@ func main() {
 			}
 			log.Printf("Encoded data: %s\n", messageValue.Payload)
 
-			kafka.SendMessage(messageKey, messageValue, signals)
+			kafka.SendMessage(messageKey, messageValue)
 		}
 	}()
 

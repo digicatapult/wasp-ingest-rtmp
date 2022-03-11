@@ -3,8 +3,6 @@ package services
 import (
 	"encoding/json"
 	"log"
-	"os"
-	"time"
 
 	"github.com/Shopify/sarama"
 
@@ -20,13 +18,13 @@ type Payload struct {
 
 // KafkaOperations defines operations for kafka messaging
 type KafkaOperations interface {
-	SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal)
+	SendMessage(mKey string, mValue KafkaMessage)
 	PayloadQueue() chan *Payload
 }
 
 // KafkaService implements kafka message functionality
 type KafkaService struct {
-	ap sarama.AsyncProducer
+	sp sarama.SyncProducer
 
 	payloads chan *Payload
 }
@@ -41,16 +39,16 @@ type KafkaMessage struct {
 }
 
 // NewKafkaService will instantiate an instance using the producer provided
-func NewKafkaService(ap sarama.AsyncProducer) *KafkaService {
+func NewKafkaService(sp sarama.SyncProducer) *KafkaService {
 	return &KafkaService{
-		ap: ap,
+		sp: sp,
 
 		payloads: make(chan *Payload),
 	}
 }
 
 // SendMessage can send a message to the
-func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals chan os.Signal) {
+func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage) {
 	mValueMarshal := &mValue
 
 	mValueMarshalled, errJSONMarshal := json.Marshal(mValueMarshal)
@@ -66,25 +64,12 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage, signals cha
 		Value: sarama.StringEncoder(mValueMarshalled),
 	}
 
-	var enqueued, errors int
-
-ProducerLoop:
-	for {
-		time.Sleep(time.Second)
-
-		select {
-		case k.ap.Input() <- msg:
-			enqueued++
-			log.Println("New Message produced")
-		case err := <-k.ap.Errors():
-			log.Fatalln("Failed to produce message", err)
-			errors++
-		case <-signals:
-			break ProducerLoop
-		}
+	partition, offset, err := k.sp.SendMessage(msg)
+	if err != nil {
+		log.Printf("error sending msg %s - %s (%d, %d\n", msg.Key, err, partition, offset)
 	}
 
-	log.Printf("Enqueued: %d; errors: %d\n", enqueued, errors)
+	log.Printf("Message sent to partition %d, offset %d\n", partition, offset)
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending

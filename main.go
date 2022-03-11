@@ -3,10 +3,14 @@ package main
 import (
 	"log"
 	"os"
+	"strings"
 
 	"github.com/Shopify/sarama"
 	"github.com/pkg/errors"
 	"go.uber.org/zap"
+
+	"github.com/digicatapult/wasp-ingest-rtmp/services"
+	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
 
 func setupProducer(kafkaBrokers []string) (sarama.SyncProducer, error) {
@@ -40,28 +44,23 @@ func main() {
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
 
-	zap.S().Debug("DEBUG")
-	zap.S().Info("INFO")
-	zap.S().Warn("WARN")
-	zap.S().Error("ERROR")
+	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 
-	// sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
+	kafkaBrokers := util.GetEnv(util.KafkaBrokersEnv, "localhost:9092")
 
-	// kafkaBrokers := util.GetEnv(util.KafkaBrokersEnv, "localhost:9092")
+	producer, errProducer := setupProducer(strings.Split(kafkaBrokers, ","))
+	if errProducer != nil {
+		panic(errProducer)
+	}
 
-	// producer, errProducer := setupProducer(strings.Split(kafkaBrokers, ","))
-	// if errProducer != nil {
-	// 	panic(errProducer)
-	// }
+	defer func() {
+		if err := producer.Close(); err != nil {
+			log.Fatalln(err)
+		}
+	}()
 
-	// defer func() {
-	// 	if err := producer.Close(); err != nil {
-	// 		log.Fatalln(err)
-	// 	}
-	// }()
+	kafka := services.NewKafkaService(producer)
 
-	// kafka := services.NewKafkaService(producer)
-
-	// videoIngest := services.NewVideoIngestService(kafka)
-	// videoIngest.IngestVideo()
+	videoIngest := services.NewVideoIngestService(kafka)
+	videoIngest.IngestVideo()
 }

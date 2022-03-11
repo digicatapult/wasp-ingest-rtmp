@@ -69,10 +69,10 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage) {
 
 	partition, offset, err := k.sp.SendMessage(msg)
 	if err != nil {
-		zap.S().Infof("error sending msg %s - %s (%d, %d", msg.Key, err, partition, offset)
+		zap.S().Errorf("error sending msg %s - %s (%d, %d", msg.Key, err, partition, offset)
 	}
 
-	zap.S().Infof("Message sent to partition %d, offset %d", partition, offset)
+	zap.S().Debugf("Message sent to partition %d, offset %d", partition, offset)
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending
@@ -85,7 +85,7 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 	for {
 		select {
 		case payload := <-k.payloads:
-			zap.S().Infof("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			zap.S().Debugf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 
 			messageKey := "01000000-0000-4000-8883-c7df300514ed"
 			messageValue := KafkaMessage{
@@ -95,7 +95,6 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 				Payload:   base64.StdEncoding.EncodeToString(payload.Data),
 				Metadata:  "{}",
 			}
-			// zap.S().Infof("Encoded data: %s", messageValue.Payload)
 
 			k.SendMessage(messageKey, messageValue)
 			sendWaitGroup.Done()

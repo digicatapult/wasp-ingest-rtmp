@@ -41,13 +41,16 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 
 			switch {
 			case count == 0 || errors.Is(err, io.EOF):
-				zap.S().Info("nothing found")
+				zap.S().Debug("end of stream reached")
 
 				return
 			case count != frameSize:
-				zap.S().Infof("end of stream: %d, %s", count, err)
+				zap.S().Infof("end of stream reached, sending short chunk: %d, %s", count, err)
 			case err != nil:
-				zap.S().Infof("read error: %d, %s", count, err)
+				zap.S().Errorf("read error: %d, %s", count, err)
+				if count == 0 {
+					return
+				}
 			}
 
 			bufCopy := make([]byte, frameSize)
@@ -59,7 +62,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 				Data:    bufCopy,
 			}
 
-			zap.S().Infof("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 			videoSendWaitGroup.Add(1)
 			vs.ks.PayloadQueue() <- payload
 		}

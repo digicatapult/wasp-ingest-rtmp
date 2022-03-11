@@ -44,7 +44,7 @@ func main() {
 	defer logger.Sync()
 	zap.ReplaceGlobals(logger)
 
-	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
+	sarama.Logger = util.SaramaZapLogger{}
 
 	kafkaBrokers := util.GetEnv(util.KafkaBrokersEnv, "localhost:9092")
 

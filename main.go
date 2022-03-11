@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"os"
 	"strings"
 
@@ -29,18 +30,29 @@ func main() {
 	cfg := zap.NewDevelopmentConfig()
 	if os.Getenv("ENV") == "production" {
 		cfg = zap.NewProductionConfig()
+
 		lvl, err := zap.ParseAtomicLevel(os.Getenv("LOG_LEVEL"))
 		if err != nil {
 			panic("invalid log level")
 		}
-		zap.S().Infof("setting level: %s", lvl.String())
+
+		log.Printf("setting level: %s", lvl.String())
+
 		cfg.Level = lvl
 	}
+
 	logger, err := cfg.Build()
 	if err != nil {
-		panic("error initialising the logger")
+		panic("error initializing the logger")
 	}
-	defer logger.Sync()
+
+	defer func() {
+		err := logger.Sync()
+		if err != nil {
+			log.Printf("error whilst syncing zap: %s\n", err)
+		}
+	}()
+
 	zap.ReplaceGlobals(logger)
 
 	sarama.Logger = util.SaramaZapLogger{}

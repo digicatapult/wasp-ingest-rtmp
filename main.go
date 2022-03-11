@@ -50,5 +50,5 @@ func main() {
 	kafka := services.NewKafkaService(producer)
 
 	videoIngest := services.NewVideoIngestService(kafka)
-	videoIngest.IngestVideo()
+	videoIngest.IngestVideo(rtmpURL)
 }

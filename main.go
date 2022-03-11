@@ -1,6 +1,7 @@
 package main
 
 import (
+	"flag"
 	"log"
 	"os"
 	"strings"
@@ -26,6 +27,11 @@ func setupProducer(kafkaBrokers []string) (sarama.SyncProducer, error) {
 }
 
 func main() {
+	var rtmpURL string
+
+	flag.StringVar(&rtmpURL, "rtmp", "default", "The url of the rtmp stream to ingest")
+	flag.Parse()
+
 	sarama.Logger = log.New(os.Stdout, "[Sarama] ", log.LstdFlags)
 
 	kafkaBrokers := util.GetEnv(util.KafkaBrokersEnv, "localhost:9092")
@@ -44,5 +50,5 @@ func main() {
 	kafka := services.NewKafkaService(producer)
 
 	videoIngest := services.NewVideoIngestService(kafka)
-	videoIngest.IngestVideo()
+	videoIngest.IngestVideo(rtmpURL)
 }

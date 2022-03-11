@@ -24,41 +24,43 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo() {
 	pipeReader, pipeWriter := io.Pipe()
-	wg := &sync.WaitGroup{}
+	videoSendWaitGroup := &sync.WaitGroup{}
 
 	shutdown := make(chan bool)
 
-	go vs.ks.StartBackgroundSend(wg, shutdown)
+	go vs.ks.StartBackgroundSend(videoSendWaitGroup, shutdown)
 
 	go func() {
 		frameSize := 1000
 		frameCount := 0
 		buf := make([]byte, frameSize)
+
 		for {
-			n, err := io.ReadFull(pipeReader, buf)
+			count, err := io.ReadFull(pipeReader, buf)
 			frameCount++
 
 			switch {
-			case n == 0 || errors.Is(err, io.EOF):
+			case count == 0 || errors.Is(err, io.EOF):
 				log.Println("nothing found")
+
 				return
-			case n != frameSize:
-				log.Printf("end of stream: %d, %s\n", n, err)
+			case count != frameSize:
+				log.Printf("end of stream: %d, %s\n", count, err)
 			case err != nil:
-				log.Printf("read error: %d, %s\n", n, err)
+				log.Printf("read error: %d, %s\n", count, err)
 			}
 
-			new := make([]byte, frameSize)
-			copy(new, buf)
+			bufCopy := make([]byte, frameSize)
+			copy(bufCopy, buf)
 
 			payload := &Payload{
 				ID:      "the-stream-identifier",
 				FrameNo: frameCount * frameSize,
-				Data:    new,
+				Data:    bufCopy,
 			}
 
 			log.Printf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
-			wg.Add(1)
+			videoSendWaitGroup.Add(1)
 			vs.ks.PayloadQueue() <- payload
 		}
 	}()
@@ -78,6 +80,6 @@ func (vs *VideoIngestService) IngestVideo() {
 
 	err := <-done
 	log.Printf("Done (waiting for completion of send): %s\n", err)
-	wg.Wait()
+	videoSendWaitGroup.Wait()
 	shutdown <- true
 }

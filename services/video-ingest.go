@@ -22,7 +22,7 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 }
 
 // IngestVideo will ingest a video
-func (vs *VideoIngestService) IngestVideo() {
+func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	pipeReader, pipeWriter := io.Pipe()
 	videoSendWaitGroup := &sync.WaitGroup{}
 
@@ -68,7 +68,7 @@ func (vs *VideoIngestService) IngestVideo() {
 	done := make(chan error)
 
 	go func() {
-		err := ffmpeg.Input("rtmp://192.168.68.119:1935/live/rfBd56ti2SMtYvSgD5xAV0YU99zampta7Z7S575KLkIZ9PYk").
+		err := ffmpeg.Input(rtmpURL).
 			Output("pipe:", ffmpeg.KwArgs{"f": "h264"}).
 			WithOutput(pipeWriter).
 			Run()

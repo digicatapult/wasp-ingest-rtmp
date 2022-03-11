@@ -54,3 +54,11 @@ Usage of ./wasp-ingest-rtmp:
   -rtmp string
     	The url of the rtmp stream to ingest (default "default")
 ```
+
+### Log Levels
+
+Logging levels can be configured when the application is running in "production" mode. To do this a couple of environment variables need to be set.
+
+```
+$ ENV=production LOG_LEVEL=warn ./wasp-ingest-rtmp
+```

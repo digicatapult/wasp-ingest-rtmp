@@ -3,10 +3,10 @@ package services
 import (
 	"encoding/base64"
 	"encoding/json"
-	"log"
 	"sync"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/zap"
 
 	"github.com/digicatapult/wasp-ingest-rtmp/util"
 )
@@ -56,7 +56,7 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage) {
 
 	mValueMarshalled, errJSONMarshal := json.Marshal(mValueMarshal)
 	if errJSONMarshal != nil {
-		log.Fatalln(errJSONMarshal)
+		zap.S().Fatal(errJSONMarshal)
 
 		return
 	}
@@ -69,10 +69,10 @@ func (k *KafkaService) SendMessage(mKey string, mValue KafkaMessage) {
 
 	partition, offset, err := k.sp.SendMessage(msg)
 	if err != nil {
-		log.Printf("error sending msg %s - %s (%d, %d\n", msg.Key, err, partition, offset)
+		zap.S().Errorf("error sending msg %s - %s (%d, %d", msg.Key, err, partition, offset)
 	}
 
-	log.Printf("Message sent to partition %d, offset %d\n", partition, offset)
+	zap.S().Debugf("Message sent to partition %d, offset %d", partition, offset)
 }
 
 // PayloadQueue provides access to load a payload object into the queue for sending
@@ -85,7 +85,7 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 	for {
 		select {
 		case payload := <-k.payloads:
-			log.Printf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			zap.S().Debugf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 
 			messageKey := "01000000-0000-4000-8883-c7df300514ed"
 			messageValue := KafkaMessage{
@@ -95,12 +95,11 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 				Payload:   base64.StdEncoding.EncodeToString(payload.Data),
 				Metadata:  "{}",
 			}
-			// log.Printf("Encoded data: %s\n", messageValue.Payload)
 
 			k.SendMessage(messageKey, messageValue)
 			sendWaitGroup.Done()
 		case <-shutdown:
-			log.Println("closing the background send")
+			zap.S().Info("closing the background send")
 
 			return
 		}

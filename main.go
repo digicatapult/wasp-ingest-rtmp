@@ -26,9 +26,9 @@ func setupProducer(kafkaBrokers []string) (sarama.SyncProducer, error) {
 	return producer, nil
 }
 
-var rtmpURL string
-
 func main() {
+	var rtmpURL string
+
 	flag.StringVar(&rtmpURL, "rtmp", "default", "The url of the rtmp stream to ingest")
 	flag.Parse()
 

@@ -28,8 +28,12 @@ make test
 Docker
 
 ```
-docker build -t nginx-rtmp .
+docker build --target development -t nginx-rtmp .
 docker run -p 1935:1935 -p 8080:8080 -it nginx-rtmp:latest
+```
+Alternatively to run alongside Kafka/Zookeeper
+```
+docker-compose -f docker-compose.dev.yaml
 ```
 
 set rtmp streaming device to rtmp://<your ip>:1935/stream/whatever

@@ -24,5 +24,4 @@ COPY ./config/stream_prod.conf /etc/nginx/rtmp.d/stream_prod.conf
 COPY ./scripts/start_wasp-ingest-rtmp.sh /bin/ingest-rtmp.sh
 ENV ENV=production
 EXPOSE 1935 8080
-RUN ln -sf /dev/stdout /var/log/nginx/ingest.log
 CMD ["sh", "-c", "/bin/printenv > /etc/envars ; /usr/sbin/nginx"]

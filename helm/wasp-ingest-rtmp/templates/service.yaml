@@ -1,0 +1,43 @@
+{{- $fullName := include "wasp-ingest-rtmp.fullname" . -}}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wasp-ingest-rtmp.fullname" . }}
+  labels:
+    {{- include "wasp-ingest-rtmp.labels" . | nindent 4 }}
+spec:
+  selector:
+    name: {{ include "wasp-ingest-rtmp.fullname" . }}
+  ports:
+    - name: http
+      protocol: 'TCP'
+      port: 80
+      targetPort: 8080
+    - name: rtmp
+      protocol: 'TCP'
+      port: 1935
+      targetPort: 1935
+{{- if .Values.service.createExternal }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "wasp-ingest-rtmp.fullname" . }}-ingest
+  labels:
+    {{- include "wasp-ingest-rtmp.labels" . | nindent 4 }}
+{{- with .Values.service.annotations }}
+  annotations:
+  {{- range $key, $value := . }}
+    {{ $key }}: {{ $value | quote }}
+  {{- end }}
+{{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    name: {{ include "wasp-ingest-rtmp.fullname" . }}
+  ports:
+    - name: rtmp
+      protocol: 'TCP'
+      port: 1935
+      targetPort: 1935
+{{- end }}

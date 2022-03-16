@@ -1,0 +1,4 @@
+image:
+  repository: 'wasp-ingest-rtmp'
+  tag: 'latest'
+  PullPolicy: Never

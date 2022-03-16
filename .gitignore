@@ -4,7 +4,8 @@
 *.dll
 *.so
 *.dylib
-wasp-ingest-rtmp
+*.tgz
+/wasp-ingest-rtmp
 
 # Test binary, built with `go test -c`
 *.test

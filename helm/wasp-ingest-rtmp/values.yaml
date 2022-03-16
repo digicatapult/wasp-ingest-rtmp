@@ -1,0 +1,16 @@
+config:
+  logLevel: info
+  # kafkaBrokers: 
+  kafkaTopic: raw-payloads
+service:
+  createExternal: false
+  type: LoadBalancer
+  annotations: {}
+replicaCount: 1
+kafka:
+  enabled: true
+image:
+  repository: ghcr.io/digicatapult/wasp-ingest-rtmp
+  pullPolicy: IfNotPresent
+  tag: "v0.0.1"
+  pullSecrets: ["ghcr-cdecatapult"]

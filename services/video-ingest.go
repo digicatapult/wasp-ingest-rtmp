@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"io"
+	"net/url"
 	"sync"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
@@ -30,7 +31,13 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 
 	go vs.ks.StartBackgroundSend(videoSendWaitGroup, shutdown)
 
-	go vs.consumeVideo(pipeReader, videoSendWaitGroup)
+	ingestID := getIngestIDFromURL(rtmpURL)
+	if ingestID == "" {
+		zap.S().Warn("ingestID is empty, not consuming video")
+		return
+	}
+
+	go vs.consumeVideo(ingestID, pipeReader, videoSendWaitGroup)
 
 	done := make(chan error)
 
@@ -51,7 +58,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	shutdown <- true
 }
 
-func (vs *VideoIngestService) consumeVideo(reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
+func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
 	frameSize := 1000
 	frameCount := 0
 	buf := make([]byte, frameSize)
@@ -79,7 +86,7 @@ func (vs *VideoIngestService) consumeVideo(reader io.Reader, videoSendWaitGroup 
 		copy(bufCopy, buf)
 
 		payload := &Payload{
-			ID:      "the-stream-identifier",
+			ID:      ingestID,
 			FrameNo: frameCount * frameSize,
 			Data:    bufCopy,
 		}
@@ -88,4 +95,14 @@ func (vs *VideoIngestService) consumeVideo(reader io.Reader, videoSendWaitGroup 
 		videoSendWaitGroup.Add(1)
 		vs.ks.PayloadQueue() <- payload
 	}
+}
+
+func getIngestIDFromURL(rtmpURL string) string {
+	parsed, err := url.Parse(rtmpURL)
+	if err != nil {
+		zap.S().Errorf("unable to parse rtmp url to create ingest id: %s", err)
+		return ""
+	}
+
+	return parsed.Path
 }

@@ -34,6 +34,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	ingestID := getIngestIDFromURL(rtmpURL)
 	if ingestID == "" {
 		zap.S().Warn("ingestID is empty, not consuming video")
+
 		return
 	}
 
@@ -101,6 +102,7 @@ func getIngestIDFromURL(rtmpURL string) string {
 	parsed, err := url.Parse(rtmpURL)
 	if err != nil {
 		zap.S().Errorf("unable to parse rtmp url to create ingest id: %s", err)
+
 		return ""
 	}
 

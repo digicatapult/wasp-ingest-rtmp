@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"sync"
+	"time"
 
 	"github.com/Shopify/sarama"
 	"go.uber.org/zap"
@@ -34,11 +35,11 @@ type KafkaService struct {
 
 // KafkaMessage defines the message structure
 type KafkaMessage struct {
-	Ingest    string `json:"ingest"`
-	IngestID  string `json:"ingestId"`
-	Timestamp string `json:"timestamp"`
-	Payload   string `json:"payload"`
-	Metadata  string `json:"metadata"`
+	Ingest    string                 `json:"ingest"`
+	IngestID  string                 `json:"ingestId"`
+	Timestamp string                 `json:"timestamp"`
+	Payload   string                 `json:"payload"`
+	Metadata  map[string]interface{} `json:"metadata"`
 }
 
 // NewKafkaService will instantiate an instance using the producer provided
@@ -90,10 +91,12 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 			messageKey := "01000000-0000-4000-8883-c7df300514ed"
 			messageValue := KafkaMessage{
 				Ingest:    "rtmp",
-				IngestID:  "4883C7DF300514ED",
-				Timestamp: "2021-08-31T14:51:36.507Z",
+				IngestID:  payload.ID,
+				Timestamp: time.Now().Format(time.RFC3339),
 				Payload:   base64.StdEncoding.EncodeToString(payload.Data),
-				Metadata:  "{}",
+				Metadata: map[string]interface{}{
+					"rtmp_path": payload.ID,
+				},
 			}
 
 			k.SendMessage(messageKey, messageValue)

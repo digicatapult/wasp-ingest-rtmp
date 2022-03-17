@@ -4,6 +4,7 @@ import (
 	"errors"
 	"io"
 	"net/url"
+	"strings"
 	"sync"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
@@ -105,6 +106,7 @@ func getIngestIDFromURL(rtmpURL string) string {
 
 		return ""
 	}
+	ingestID := strings.Replace(parsed.Path, "/", "-", -1)
 
-	return parsed.Path
+	return ingestID
 }

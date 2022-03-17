@@ -1,6 +1,6 @@
 config:
   logLevel: info
-  # kafkaBrokers: 
+  # kafkaBrokers:
   kafkaTopic: raw-payloads
 service:
   createExternal: false

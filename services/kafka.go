@@ -88,7 +88,7 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 		case payload := <-k.payloads:
 			zap.S().Debugf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 
-			messageKey := "01000000-0000-4000-8883-c7df300514ed"
+			payload.ID = "01000000-0000-4000-8883-c7df300514ed"
 			messageValue := KafkaMessage{
 				Ingest:    "rtmp",
 				IngestID:  payload.ID,
@@ -99,7 +99,7 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 				},
 			}
 
-			k.SendMessage(messageKey, messageValue)
+			k.SendMessage(payload.ID, messageValue)
 			sendWaitGroup.Done()
 		case <-shutdown:
 			zap.S().Info("closing the background send")

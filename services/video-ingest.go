@@ -100,9 +100,7 @@ func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, vi
 }
 
 func removeFirstCharacter(ingestedID string) string {
-	out := strings.TrimLeft(ingestedID, "-")
-
-	return out
+	return strings.TrimLeft(ingestedID, "-")
 }
 
 func getIngestIDFromURL(rtmpURL string) string {

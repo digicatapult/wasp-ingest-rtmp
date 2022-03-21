@@ -100,12 +100,14 @@ func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, vi
 	}
 }
 
-func removeFirstCharacterIfDash(s string) string {
-	if(s[0:1] == "/"){
-		_, i := utf8.DecodeRuneInString(s)
-		return s[i:]
+func removeFirstCharacterIfDash(ingestedID string) string {
+	if ( ingestedID[0:1] == "/" ) {
+		_, i := utf8.DecodeRuneInString(ingestedID)
+
+		return ingestedID[i:]
 	}
-	return s
+	
+	return ingestedID
 }
 
 func getIngestIDFromURL(rtmpURL string) string {
@@ -117,5 +119,6 @@ func getIngestIDFromURL(rtmpURL string) string {
 	}
 
 	ingestID := strings.Replace(parsed.Path, "/", "-", -1)
+
 	return removeFirstCharacterIfDash(ingestID)
 }

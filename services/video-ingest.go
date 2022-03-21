@@ -6,6 +6,7 @@ import (
 	"net/url"
 	"strings"
 	"sync"
+	"unicode/utf8"
 
 	ffmpeg "github.com/u2takey/ffmpeg-go"
 	"go.uber.org/zap"
@@ -99,6 +100,14 @@ func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, vi
 	}
 }
 
+func removeFirstCharacterIfDash(s string) string {
+	if(s[0:1] == "/"){
+		_, i := utf8.DecodeRuneInString(s)
+		return s[i:]
+	}
+	return s
+}
+
 func getIngestIDFromURL(rtmpURL string) string {
 	parsed, err := url.Parse(rtmpURL)
 	if err != nil {
@@ -108,6 +117,5 @@ func getIngestIDFromURL(rtmpURL string) string {
 	}
 
 	ingestID := strings.Replace(parsed.Path, "/", "-", -1)
-
-	return ingestID
+	return removeFirstCharacterIfDash(ingestID)
 }

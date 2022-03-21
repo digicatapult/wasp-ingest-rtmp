@@ -18,7 +18,7 @@ builds:
       - arm64
 dockers:
   - image_templates:
-    - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-amd64
+    - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
     goos: linux
     goarch: amd64
     dockerfile: goreleaser/Dockerfile
@@ -32,8 +32,16 @@ dockers:
     - scripts/start_wasp-ingest-rtmp.sh
     build_flag_templates:
     - "--platform=linux/amd64"
+    - --label=org.opencontainers.image.title={{ .ProjectName }}
+    - --label=org.opencontainers.image.description={{ .ProjectName }}
+    - --label=org.opencontainers.image.url=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.source=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.version={{ .Version }}
+    - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+    - --label=org.opencontainers.image.revision={{ .FullCommit }}
+    - --label=org.opencontainers.image.licenses=APACHE2
   - image_templates:
-    - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-arm64
+    - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
     goos: linux
     goarch: arm64
     dockerfile: goreleaser/Dockerfile
@@ -47,12 +55,23 @@ dockers:
     - scripts/start_wasp-ingest-rtmp.sh
     build_flag_templates:
     - "--platform=linux/arm64"
+    - --label=org.opencontainers.image.title={{ .ProjectName }}
+    - --label=org.opencontainers.image.description={{ .ProjectName }}
+    - --label=org.opencontainers.image.url=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.source=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.version={{ .Version }}
+    - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+    - --label=org.opencontainers.image.revision={{ .FullCommit }}
+    - --label=org.opencontainers.image.licenses=APACHE2
 docker_manifests:
-- name_template: user/repo:{{ .Version }}
+- name_template: ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}
   image_templates:
-  - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-amd64
-  - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-arm64
-
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
+- name_template: ghcr.io/digicatapult/{{ .ProjectName }}:latest
+  image_templates:
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
 archives:
   - replacements:
       darwin: Darwin

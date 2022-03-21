@@ -2,9 +2,10 @@ name: Release
 
 on:
   push:
-    branches: ["feature/helm"]
     tags:
     - 'v*'
+permissions:
+  contents: write
 
 jobs:
   preconditions:
@@ -161,7 +162,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
-        if: startsWith(github.ref, 'refs/tags/')
+        if: github.ref == 'refs/head/feature/helm'
         with:
           version: latest
           args: release --rm-dist

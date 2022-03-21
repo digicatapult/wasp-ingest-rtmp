@@ -18,10 +18,9 @@ builds:
       - arm64
 dockers:
   - image_templates:
-    - user/repo:v{{ .Version }}-amd64
+    - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-amd64
     goos: linux
     goarch: amd64
-    skip_push: true
     dockerfile: goreleaser/Dockerfile
     use: buildx
     extra_files:
@@ -34,10 +33,9 @@ dockers:
     build_flag_templates:
     - "--platform=linux/amd64"
   - image_templates:
-    - user/repo:v{{ .Version }}-arm64
+    - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-arm64
     goos: linux
     goarch: arm64
-    skip_push: true
     dockerfile: goreleaser/Dockerfile
     use: buildx
     extra_files:
@@ -52,8 +50,8 @@ dockers:
 docker_manifests:
 - name_template: user/repo:{{ .Version }}
   image_templates:
-  - user/repo:v{{ .Version }}-amd64
-  - user/repo:v{{ .Version }}-arm64
+  - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-amd64
+  - digicatapult/wasp-ingest-rtmp:v{{ .Version }}-arm64
 
 archives:
   - replacements:
@@ -65,7 +63,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ incpatch .Version }}-next"
+  name_template: "{{ incpatch .Version }}"
 changelog:
   sort: asc
   filters:

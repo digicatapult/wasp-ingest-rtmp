@@ -99,14 +99,6 @@ func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, vi
 	}
 }
 
-func removeFirstCharacter(ingestedID string) string {
-	if ingestedID[0:1] == "-" {
-		return strings.TrimLeft(ingestedID, "-")
-	}
-
-	return ingestedID
-}
-
 func getIngestIDFromURL(rtmpURL string) string {
 	parsed, err := url.Parse(rtmpURL)
 	if err != nil {
@@ -115,7 +107,13 @@ func getIngestIDFromURL(rtmpURL string) string {
 		return ""
 	}
 
-	ingestID := strings.Replace(parsed.Path, "/", "-", -1)
+	ingestID := parsed.Path
 
-	return removeFirstCharacter(ingestID)
+	if strings.HasPrefix(ingestID, "/") {
+		ingestID = strings.TrimLeft(ingestID, "/")
+	}
+
+	ingestID = strings.Replace(ingestID, "/", "-", -1)
+
+	return ingestID
 }

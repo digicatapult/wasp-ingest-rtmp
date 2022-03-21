@@ -20,7 +20,7 @@ services:
       - ALLOW_PLAINTEXT_LISTENER=yes
       - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=EXTERNAL:PLAINTEXT,INTERNAL:PLAINTEXT
       - KAFKA_CFG_LISTENERS=EXTERNAL://:9092,INTERNAL://:9093
-      - KAFKA_CFG_ADVERTISED_LISTENERS=EXTERNAL://kafka:9092,INTERNAL://kafka:9093
+      - KAFKA_CFG_ADVERTISED_LISTENERS=EXTERNAL://localhost:9092,INTERNAL://kafka:9093
       - KAFKA_INTER_BROKER_LISTENER_NAME=INTERNAL
     depends_on:
       - zookeeper
@@ -32,7 +32,7 @@ services:
     depends_on:
       - zookeeper
       - kafka
-  nginx-rtmp-prod:
+  nginx-rtmp-dev:
     build:
       target: development
       context: .
@@ -40,7 +40,7 @@ services:
       - "1935:1935"
       - "8080:8080"
     depends_on:
-      - kafka_topics
+      - kafka-topics
       - kafka
       - zookeeper
 

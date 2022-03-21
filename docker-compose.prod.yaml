@@ -45,7 +45,7 @@ services:
       - ENV=production
       - LOG_LEVEL=debug
     depends_on:
-      - kafka_topics
+      - kafka-topics
       - kafka
       - zookeeper
 

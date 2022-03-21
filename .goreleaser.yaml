@@ -1,0 +1,74 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    binary: wasp-ingest-rtmp
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+dockers:
+  - image_templates:
+    - user/repo:v{{ .Version }}-amd64
+    goos: linux
+    goarch: amd64
+    skip_push: true
+    dockerfile: goreleaser/Dockerfile
+    use: buildx
+    extra_files:
+    - scripts/start_wasp-ingest-rtmp.sh
+    - config/default.conf
+    - config/nginx.conf
+    - config/stat.xsl
+    - config/stream_prod.conf
+    - scripts/start_wasp-ingest-rtmp.sh
+    build_flag_templates:
+    - "--platform=linux/amd64"
+  - image_templates:
+    - user/repo:v{{ .Version }}-arm64
+    goos: linux
+    goarch: arm64
+    skip_push: true
+    dockerfile: goreleaser/Dockerfile
+    use: buildx
+    extra_files:
+    - scripts/start_wasp-ingest-rtmp.sh
+    - config/default.conf
+    - config/nginx.conf
+    - config/stat.xsl
+    - config/stream_prod.conf
+    - scripts/start_wasp-ingest-rtmp.sh
+    build_flag_templates:
+    - "--platform=linux/arm64"
+docker_manifests:
+- name_template: user/repo:{{ .Version }}
+  image_templates:
+  - user/repo:v{{ .Version }}-amd64
+  - user/repo:v{{ .Version }}-arm64
+
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

@@ -88,9 +88,9 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 		case payload := <-k.payloads:
 			zap.S().Debugf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
 
-			messageKey := "01000000-0000-4000-8883-c7df300514ed"
+			messageKey := payload.ID
 			messageValue := KafkaMessage{
-				Ingest:    "rtmp",
+				Ingest:    "ingest-rtmp",
 				IngestID:  payload.ID,
 				Timestamp: time.Now().Format(time.RFC3339),
 				Payload:   base64.StdEncoding.EncodeToString(payload.Data),

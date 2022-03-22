@@ -107,7 +107,13 @@ func getIngestIDFromURL(rtmpURL string) string {
 		return ""
 	}
 
-	ingestID := strings.Replace(parsed.Path, "/", "-", -1)
+	ingestID := parsed.Path
+
+	if strings.HasPrefix(ingestID, "/") {
+		ingestID = strings.TrimLeft(ingestID, "/")
+	}
+
+	ingestID = strings.Replace(ingestID, "/", "-", -1)
 
 	return ingestID
 }

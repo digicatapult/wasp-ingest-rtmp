@@ -35,7 +35,6 @@ services:
   nginx-rtmp-dev:
     build:
       target: development
-      dockerfile: Dockerfile-dev
       context: .
     ports:
       - "1935:1935"

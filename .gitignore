@@ -4,7 +4,6 @@
 *.dll
 *.so
 *.dylib
-<<<<<<< HEAD
 *.tgz
 /wasp-ingest-rtmp
 dist/
@@ -29,4 +28,3 @@ vendor/
 !.vscode/launch.json
 !.vscode/extensions.json
 .idea
-dist/

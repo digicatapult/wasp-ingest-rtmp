@@ -68,4 +68,4 @@ $ ENV=production LOG_LEVEL=warn ./wasp-ingest-rtmp
 ```
 ## Releases
 
-To release a new version your code should be merged into main, then create a tag on the main branch at the commit using `git tag v<blah>` and push the tags `git push origin --tags`.  This will now allow a new release to be created.
+To release a new version your code should first update the helm Chart.yaml and values.yaml file to reflect the new tagged container and version.  Your code should be merged into main, then create a tag on the main branch at the commit using `git tag v<blah>` and push the tags `git push origin --tags`.  This will now allow a new release to be created.

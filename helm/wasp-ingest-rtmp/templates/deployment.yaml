@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "wasp-ingest-rtmp.fullname" . }}
+  labels:
+    {{- include "wasp-ingest-rtmp.labels" . | nindent 4 }}
+spec:
+  selector:
+    matchLabels:
+      name: {{ include "wasp-ingest-rtmp.fullname" . }}
+  replicas: {{ .Values.replicaCount }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+      labels:
+        name: {{ include "wasp-ingest-rtmp.fullname" . }}
+    spec:
+      {{- include "wasp-ingest-rtmp.imagePullSecrets" . | indent 6 }}
+      containers:
+        - name: {{ include "wasp-ingest-rtmp.fullname" . }}
+          image: {{ .Values.image.repository }}:{{ .Values.image.tag }}
+          imagePullPolicy: {{ .Values.image.pullPolicy | quote }}
+          livenessProbe:
+            httpGet:
+              path: /stats
+              port: 8080
+            initialDelaySeconds: 15
+            timeoutSeconds: 3
+            periodSeconds: 5
+          env:
+            - name: LOG_LEVEL
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wasp-ingest-rtmp.fullname" . }}-config
+                  key: logLevel
+            - name: KAFKA_BROKERS
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wasp-ingest-rtmp.fullname" . }}-config
+                  key: kafkaBrokers
+            - name: KAFKA_TOPIC
+              valueFrom:
+                configMapKeyRef:
+                  name: {{ include "wasp-ingest-rtmp.fullname" . }}-config
+                  key: kafkaTopic
+            - name: ENV
+              value: production

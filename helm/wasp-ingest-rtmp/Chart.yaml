@@ -1,0 +1,15 @@
+apiVersion: v2
+name: wasp-ingest-rtmp
+appVersion: '0.0.1'
+description: A Helm chart for WASP-INGEST-RTMP
+version: '0.0.1'
+type: application
+maintainers:
+  - name: CDECatapult
+    email: opensource@digicatapult.org.uk
+    url: www.digicatapult.org.uk
+dependencies:
+  - name: kafka
+    version: '12.7.3'
+    repository: https://charts.bitnami.com/bitnami
+    condition: kafka.enabled

@@ -1,0 +1,91 @@
+# This is an example .goreleaser.yml file with some sensible defaults.
+# Make sure to check the documentation at https://goreleaser.com
+before:
+  hooks:
+    # You may remove this if you don't use go modules.
+    - go mod tidy
+builds:
+  - env:
+      - CGO_ENABLED=0
+    binary: wasp-ingest-rtmp
+    goos:
+      - linux
+      - windows
+      - darwin
+    goarch:
+      - amd64
+      - arm
+      - arm64
+dockers:
+  - image_templates:
+    - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
+    goos: linux
+    goarch: amd64
+    dockerfile: goreleaser/Dockerfile
+    use: buildx
+    extra_files:
+    - scripts/start_wasp-ingest-rtmp.sh
+    - config/default.conf
+    - config/nginx.conf
+    - config/stat.xsl
+    - config/stream_prod.conf
+    - scripts/start_wasp-ingest-rtmp.sh
+    build_flag_templates:
+    - "--platform=linux/amd64"
+    - --label=org.opencontainers.image.title={{ .ProjectName }}
+    - --label=org.opencontainers.image.description={{ .ProjectName }}
+    - --label=org.opencontainers.image.url=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.source=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.version={{ .Version }}
+    - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+    - --label=org.opencontainers.image.revision={{ .FullCommit }}
+    - --label=org.opencontainers.image.licenses=APACHE2
+  - image_templates:
+    - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
+    goos: linux
+    goarch: arm64
+    dockerfile: goreleaser/Dockerfile
+    use: buildx
+    extra_files:
+    - scripts/start_wasp-ingest-rtmp.sh
+    - config/default.conf
+    - config/nginx.conf
+    - config/stat.xsl
+    - config/stream_prod.conf
+    - scripts/start_wasp-ingest-rtmp.sh
+    build_flag_templates:
+    - "--platform=linux/arm64"
+    - --label=org.opencontainers.image.title={{ .ProjectName }}
+    - --label=org.opencontainers.image.description={{ .ProjectName }}
+    - --label=org.opencontainers.image.url=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.source=https://github.com/digicatapult/{{ .ProjectName }}
+    - --label=org.opencontainers.image.version={{ .Version }}
+    - --label=org.opencontainers.image.created={{ time "2006-01-02T15:04:05Z07:00" }}
+    - --label=org.opencontainers.image.revision={{ .FullCommit }}
+    - --label=org.opencontainers.image.licenses=APACHE2
+docker_manifests:
+- name_template: ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}
+  image_templates:
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
+- name_template: ghcr.io/digicatapult/{{ .ProjectName }}:latest
+  image_templates:
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-amd64
+  - ghcr.io/digicatapult/{{ .ProjectName }}:v{{ .Version }}-arm64
+archives:
+  - replacements:
+      darwin: Darwin
+      linux: Linux
+      windows: Windows
+      386: i386
+      amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ incpatch .Version }}"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^docs:'
+      - '^test:'

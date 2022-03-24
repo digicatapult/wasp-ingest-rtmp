@@ -46,6 +46,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	go func() {
 		err := ffmpeg.Input(rtmpURL).
 			Output("pipe:", ffmpeg.KwArgs{
+				"f":         "h264",
 				"c:v":       "libx264",
 				"c:a":       "aac",
 				"profile:v": "baseline",

@@ -33,7 +33,7 @@ docker run -p 1935:1935 -p 8080:8080 -it nginx-rtmp:latest
 ```
 Alternatively to run alongside Kafka/Zookeeper
 ```
-docker-compose -f docker-compose.dev.yaml
+docker-compose -f docker-compose.dev.yaml up
 ```
 
 set rtmp streaming device to rtmp://<your ip>:1935/stream/whatever

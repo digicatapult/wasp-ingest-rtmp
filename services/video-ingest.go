@@ -43,6 +43,8 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 
 	done := make(chan error)
 
+	const groupOfPictureSize = 52
+
 	go func() {
 		err := ffmpeg.Input(rtmpURL).
 			Output("pipe:", ffmpeg.KwArgs{
@@ -51,7 +53,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 				"c:a":       "aac",
 				"profile:v": "baseline",
 				"movflags":  "frag_keyframe+empty_moov",
-				"g":         52,
+				"g":         groupOfPictureSize,
 			}).
 			WithOutput(pipeWriter).
 			Run()

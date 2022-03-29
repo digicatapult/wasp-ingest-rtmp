@@ -16,6 +16,7 @@ import (
 type Payload struct {
 	ID      string
 	FrameNo int
+	Type    string
 	Data    []byte
 }
 
@@ -86,7 +87,7 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 	for {
 		select {
 		case payload := <-k.payloads:
-			zap.S().Debugf("Received video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+			zap.S().Debugf("Submitting payload: %d - %s - %d", payload.FrameNo, payload.Type, len(payload.Data))
 
 			messageKey := payload.ID
 			messageValue := KafkaMessage{

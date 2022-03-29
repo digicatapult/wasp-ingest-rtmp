@@ -25,7 +25,7 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
-	pipeReader, pipeWriter := io.Pipe()
+	pipeReader, _ := io.Pipe()
 	videoSendWaitGroup := &sync.WaitGroup{}
 
 	shutdown := make(chan bool)
@@ -46,17 +46,17 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	const groupOfPictureSize = 52
 
 	go func() {
-		err := ffmpeg.Input(rtmpURL).
-			Output("pipe:", ffmpeg.KwArgs{
-				"f":         "h264",
+		err := ffmpeg.Input("frag_bunny.mp4").
+			Output("out%03d.mp4", ffmpeg.KwArgs{
+				"format":    "h264",
 				"c:v":       "libx264",
 				"c:a":       "aac",
 				"profile:v": "baseline",
 				"movflags":  "frag_keyframe+empty_moov",
 				"g":         groupOfPictureSize,
 			}).
-			WithOutput(pipeWriter).
 			Run()
+
 		if err != nil {
 			zap.S().Fatalf("problem with ffmpeg: %v", err)
 		}

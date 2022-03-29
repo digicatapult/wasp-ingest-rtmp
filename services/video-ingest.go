@@ -106,6 +106,8 @@ func (vs *VideoIngestService) consumeVideo(
 		bufCopy := make([]byte, frameSize)
 		copy(bufCopy, buf)
 
+		zap.S().Infof("\n%s", string(bufCopy))
+
 		lastFile := getLastfilename(bufCopy)
 
 		lastFilePath := filepath.Join(videoOutputDir, filepath.Clean(lastFile))
@@ -124,7 +126,7 @@ func (vs *VideoIngestService) consumeVideo(
 			ID:      ingestID,
 			Type:    "meta",
 			FrameNo: frameCount * frameSize,
-			Data:    bufCopy,
+			Data:    []byte(strings.TrimRight(string(bufCopy), "\x00")),
 		}
 		dataPayload := &Payload{
 			ID:       ingestID,
@@ -138,6 +140,7 @@ func (vs *VideoIngestService) consumeVideo(
 		vs.ks.PayloadQueue() <- metaPayload
 		videoSendWaitGroup.Add(1)
 		vs.ks.PayloadQueue() <- dataPayload
+		frameCount++
 	}
 }
 

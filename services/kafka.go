@@ -41,7 +41,7 @@ type KafkaMessage struct {
 	Ingest    string                 `json:"ingest"`
 	IngestID  string                 `json:"ingestId"`
 	Timestamp string                 `json:"timestamp"`
-	Payload   string                 `json:"payload"`
+	Payload   *Payload               `json:"payload"`
 	Metadata  map[string]interface{} `json:"metadata"`
 }
 
@@ -92,17 +92,12 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 			zap.S().Debugf("Submitting payload: %d - %s - %d", payload.FrameNo, payload.Type, len(payload.Data))
 			payload.EncodedData = base64.StdEncoding.EncodeToString(payload.Data)
 
-			payloadJSON, err := json.Marshal(payload)
-			if err != nil {
-				zap.S().Fatalf("problem marshalling payload")
-			}
-
 			messageKey := payload.ID
 			messageValue := KafkaMessage{
 				Ingest:    "ingest-rtmp",
 				IngestID:  payload.ID,
 				Timestamp: time.Now().Format(time.RFC3339),
-				Payload:   string(payloadJSON),
+				Payload:   payload,
 				Metadata: map[string]interface{}{
 					"rtmp_path": payload.ID,
 				},

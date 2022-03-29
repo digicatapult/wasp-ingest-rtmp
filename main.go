@@ -54,7 +54,7 @@ func main() {
 	}
 
 	defer func() {
-		err := logger.Sync()
+		err = logger.Sync()
 		if err != nil {
 			log.Printf("error whilst syncing zap: %s\n", err)
 		}
@@ -74,7 +74,7 @@ func main() {
 	}
 
 	defer func() {
-		if err := producer.Close(); err != nil {
+		if err = producer.Close(); err != nil {
 			zap.S().Fatal(err)
 		}
 	}()

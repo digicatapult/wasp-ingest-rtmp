@@ -48,6 +48,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	}
 
 	videoOutputDir := filepath.Join(vs.outputDir, ingestID)
+
 	err := util.CheckAndCreate(videoOutputDir)
 	if err != nil {
 		zap.S().Fatalf("unable to create temp video directory '%s': %s", videoOutputDir, err)
@@ -57,10 +58,12 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 
 	done := make(chan error)
 
+	const maxSegmentListSize = 3
+
 	go func() {
 		videoOutputPath := filepath.Join(videoOutputDir, `output%03d.ts`)
 
-		err := ffmpeg.Input(rtmpURL).
+		ffmpegErr := ffmpeg.Input(rtmpURL).
 			Output(videoOutputPath, ffmpeg.KwArgs{
 				"f":                 "segment",
 				"c:v":               "libx264",
@@ -69,14 +72,14 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 				"segment_list":      "pipe:1",
 				"segment_format":    "mpegts",
 				"segment_list_type": "m3u8",
-				"segment_list_size": 3,
+				"segment_list_size": maxSegmentListSize,
 			}).
 			WithOutput(pipeWriter).
 			Run()
-		if err != nil {
-			zap.S().Fatalf("problem with ffmpeg: %v", err)
+		if ffmpegErr != nil {
+			zap.S().Fatalf("problem with ffmpeg: %v", ffmpegErr)
 		}
-		done <- err
+		done <- ffmpegErr
 	}()
 
 	err = <-done
@@ -85,46 +88,29 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	shutdown <- true
 }
 
-func (vs *VideoIngestService) consumeVideo(ingestID, videoOutputDir string, reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
+func (vs *VideoIngestService) consumeVideo(
+	ingestID, videoOutputDir string,
+	reader io.Reader,
+	videoSendWaitGroup *sync.WaitGroup,
+) {
 	frameSize := 1000
 	frameCount := 0
 	buf := make([]byte, frameSize)
 
 	for {
 		_, err := reader.Read(buf)
-		// frameCount++
 		if err != nil {
 			zap.S().Fatalf("read error: %s", err)
 		}
-		// switch {
-		// case count == 0 || errors.Is(err, io.EOF):
-		// 	zap.S().Debug("end of stream reached")
-
-		// 	return
-		// case count != frameSize:
-		// 	zap.S().Infof("end of stream reached, sending short chunk: %d, %s", count, err)
-		// case err != nil:
-		// 	zap.S().Errorf("read error: %d, %s", count, err)
-
-		// 	if count == 0 {
-		// 		return
-		// 	}
-		// }
 
 		bufCopy := make([]byte, frameSize)
 		copy(bufCopy, buf)
 
-		m3u8 := strings.TrimRight(string(bufCopy), "\x00")
+		lastFile := getLastfilename(bufCopy)
 
-		lines := strings.Split(m3u8, "\n")
+		lastFilePath := filepath.Join(videoOutputDir, filepath.Clean(lastFile))
 
-		lastFile := lines[len(lines)-2]
-
-		lastFilePath := filepath.Join(videoOutputDir, lastFile)
-
-		zap.S().Infof("Path:'%s'", lastFilePath)
-
-		f, err := os.Open(lastFilePath)
+		f, err := os.Open(filepath.Clean(lastFilePath))
 		if err != nil {
 			zap.S().Fatalf("unable to open file for reading %s: %s", lastFilePath, err)
 		}
@@ -141,16 +127,26 @@ func (vs *VideoIngestService) consumeVideo(ingestID, videoOutputDir string, read
 			Data:    bufCopy,
 		}
 		dataPayload := &Payload{
-			ID:      ingestID,
-			Type:    "data",
-			FrameNo: frameCount * frameSize,
-			Data:    bytes,
+			ID:       ingestID,
+			Type:     "data",
+			Filename: lastFile,
+			FrameNo:  frameCount * frameSize,
+			Data:     bytes,
 		}
+
 		videoSendWaitGroup.Add(1)
 		vs.ks.PayloadQueue() <- metaPayload
 		videoSendWaitGroup.Add(1)
 		vs.ks.PayloadQueue() <- dataPayload
 	}
+}
+
+func getLastfilename(m3u8Content []byte) string {
+	m3u8 := strings.TrimRight(string(m3u8Content), "\x00")
+
+	lines := strings.Split(m3u8, "\n")
+
+	return lines[len(lines)-2]
 }
 
 func getIngestIDFromURL(rtmpURL string) string {

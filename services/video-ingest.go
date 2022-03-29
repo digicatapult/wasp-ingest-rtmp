@@ -1,9 +1,10 @@
 package services
 
 import (
-	"errors"
 	"io"
+	"io/ioutil"
 	"net/url"
+	"os"
 	"strings"
 	"sync"
 
@@ -25,7 +26,7 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
-	pipeReader, pipeWriter := io.Pipe()
+	pipeReader, _ := io.Pipe()
 	videoSendWaitGroup := &sync.WaitGroup{}
 
 	shutdown := make(chan bool)
@@ -43,19 +44,13 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 
 	done := make(chan error)
 
-	const groupOfPictureSize = 52
-
 	go func() {
+		// segmented files that are also fragmented
 		err := ffmpeg.Input(rtmpURL).
-			Output("pipe:", ffmpeg.KwArgs{
-				"f":         "h264",
-				"c:v":       "libx264",
-				"c:a":       "aac",
-				"profile:v": "baseline",
-				"movflags":  "frag_keyframe+empty_moov",
-				"g":         groupOfPictureSize,
+			Output("./bin/my_frag_bunny_%03d.mp4", ffmpeg.KwArgs{
+				"f":                      "segment",
+				"segment_format_options": "movflags=frag_keyframe+empty_moov+faststart",
 			}).
-			WithOutput(pipeWriter).
 			Run()
 		if err != nil {
 			zap.S().Fatalf("problem with ffmpeg: %v", err)
@@ -69,42 +64,51 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	shutdown <- true
 }
 
+// TODO file watcher needed on ./bin directory...
 func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
-	frameSize := 1000
+	zap.S().Debugf("consumeVideo called...")
+
 	frameCount := 0
-	buf := make([]byte, frameSize)
 
-	for {
-		count, err := io.ReadFull(reader, buf)
-		frameCount++
+	// ignore the first file as this can be too large sometimes...
+	lastAccessedVideoFilename := "my_frag_bunny_000.mp4"
+	lastAccessedVideoCount := 0
 
-		switch {
-		case count == 0 || errors.Is(err, io.EOF):
-			zap.S().Debug("end of stream reached")
+	items, _ := ioutil.ReadDir("./bin")
+	fileCounter := 0
 
-			return
-		case count != frameSize:
-			zap.S().Infof("end of stream reached, sending short chunk: %d, %s", count, err)
-		case err != nil:
-			zap.S().Errorf("read error: %d, %s", count, err)
+	for _, item := range items {
+		zap.S().Debugf("file path: %s", item.Name())
+		zap.S().Debugf("fileCounter: %d", fileCounter)
+		zap.S().Debugf("!strings.HasPrefix %s", !strings.HasPrefix(item.Name(), "."))
+		zap.S().Debugf("item.Name() != lastAccessedVideoFilename %s", item.Name() != lastAccessedVideoFilename)
+		zap.S().Debugf("fileCounter != lastAccessedVideoCount %s", fileCounter != lastAccessedVideoCount)
 
-			if count == 0 {
-				return
+		if !item.IsDir() {
+			if !strings.HasPrefix(item.Name(), ".") && item.Name() != lastAccessedVideoFilename && fileCounter == lastAccessedVideoCount {
+				lastAccessedVideoFilename = item.Name()
+				lastAccessedVideoCount += 1
+
+				zap.S().Debugf("lastAccessedVideoFilename: %s lastAccessedVideoCount: %d", lastAccessedVideoFilename, lastAccessedVideoCount)
+
+				dat, err := os.ReadFile("./bin/" + item.Name())
+				if err == io.EOF {
+					err = nil
+				}
+
+				payload := &Payload{
+					ID:      ingestID,
+					FrameNo: frameCount, // * frameSize,
+					Data:    dat,
+				}
+
+				zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+				videoSendWaitGroup.Add(1)
+				vs.ks.PayloadQueue() <- payload
+
+				fileCounter++
 			}
 		}
-
-		bufCopy := make([]byte, frameSize)
-		copy(bufCopy, buf)
-
-		payload := &Payload{
-			ID:      ingestID,
-			FrameNo: frameCount * frameSize,
-			Data:    bufCopy,
-		}
-
-		zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
-		videoSendWaitGroup.Add(1)
-		vs.ks.PayloadQueue() <- payload
 	}
 }
 

@@ -7,6 +7,7 @@
 *.tgz
 /wasp-ingest-rtmp
 dist/
+bin/
 
 # Test binary, built with `go test -c`
 *.test

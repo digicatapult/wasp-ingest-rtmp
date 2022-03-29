@@ -14,11 +14,12 @@ import (
 
 // Payload defines the data contained in
 type Payload struct {
-	ID       string
-	FrameNo  int
-	Filename string
-	Type     string
-	Data     []byte
+	ID          string
+	FrameNo     int
+	Filename    string
+	Type        string
+	Data        []byte `json:"-"`
+	EncodedData string `json:"Data"`
 }
 
 // KafkaOperations defines operations for kafka messaging
@@ -89,13 +90,19 @@ func (k *KafkaService) StartBackgroundSend(sendWaitGroup *sync.WaitGroup, shutdo
 		select {
 		case payload := <-k.payloads:
 			zap.S().Debugf("Submitting payload: %d - %s - %d", payload.FrameNo, payload.Type, len(payload.Data))
+			payload.EncodedData = base64.StdEncoding.EncodeToString(payload.Data)
+
+			payloadJSON, err := json.Marshal(payload)
+			if err != nil {
+				zap.S().Fatalf("problem marshalling payload")
+			}
 
 			messageKey := payload.ID
 			messageValue := KafkaMessage{
 				Ingest:    "ingest-rtmp",
 				IngestID:  payload.ID,
 				Timestamp: time.Now().Format(time.RFC3339),
-				Payload:   base64.StdEncoding.EncodeToString(payload.Data),
+				Payload:   string(payloadJSON),
 				Metadata: map[string]interface{}{
 					"rtmp_path": payload.ID,
 				},

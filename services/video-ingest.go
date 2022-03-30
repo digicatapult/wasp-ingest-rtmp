@@ -1,10 +1,10 @@
 package services
 
 import (
-	"io"
+	"github.com/fsnotify/fsnotify"
 	"io/ioutil"
+	"log"
 	"net/url"
-	"os"
 	"strings"
 	"sync"
 
@@ -26,7 +26,6 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
-	pipeReader, _ := io.Pipe()
 	videoSendWaitGroup := &sync.WaitGroup{}
 
 	shutdown := make(chan bool)
@@ -40,7 +39,7 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 		return
 	}
 
-	go vs.consumeVideo(ingestID, pipeReader, videoSendWaitGroup)
+	go vs.consumeVideo(ingestID, videoSendWaitGroup)
 
 	done := make(chan error)
 
@@ -64,52 +63,70 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	shutdown <- true
 }
 
-// TODO file watcher needed on ./bin directory...
-func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
+// payloadQueueSender send message via payload channel
+func (vs *VideoIngestService) payloadQueueSender(ingestID string, filePath string, videoSendWaitGroup *sync.WaitGroup) {
+	fileByteArray, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	zap.S().Debugf("Video file byte array length: %d", len(fileByteArray))
+
+	payload := &Payload{
+		ID:      ingestID,
+		FrameNo: 0,
+		Data:    fileByteArray,
+	}
+
+	zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+	videoSendWaitGroup.Add(1)
+	vs.ks.PayloadQueue() <- payload
+}
+
+// ignore the first file as this can be too large sometimes...
+var previousVideoFilePath = "bin/my_frag_bunny_000.mp4"
+
+func (vs *VideoIngestService) consumeVideo(ingestID string, videoSendWaitGroup *sync.WaitGroup) {
 	zap.S().Debugf("consumeVideo called...")
 
-	frameCount := 0
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
 
-	// ignore the first file as this can be too large sometimes...
-	lastAccessedVideoFilename := "my_frag_bunny_000.mp4"
-	lastAccessedVideoCount := 0
+	done := make(chan bool)
 
-	items, _ := ioutil.ReadDir("./bin")
-	fileCounter := 0
+	go func() {
+	MONITOR:
+		for {
+			select {
+			case event := <-watcher.Events:
+				switch event.Op {
+				case fsnotify.Write:
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						zap.S().Debugf("modified file: %s", event.Name)
+						zap.S().Debugf("previousVideoFilePath: %s", previousVideoFilePath)
 
-	for _, item := range items {
-		zap.S().Debugf("file path: %s", item.Name())
-		zap.S().Debugf("fileCounter: %d", fileCounter)
-		zap.S().Debugf("!strings.HasPrefix %s", !strings.HasPrefix(item.Name(), "."))
-		zap.S().Debugf("item.Name() != lastAccessedVideoFilename %s", item.Name() != lastAccessedVideoFilename)
-		zap.S().Debugf("fileCounter != lastAccessedVideoCount %s", fileCounter != lastAccessedVideoCount)
+						if event.Name != "bin/.DS_Store" && event.Name != previousVideoFilePath {
+							vs.payloadQueueSender(ingestID, event.Name, videoSendWaitGroup)
+						}
+					}
 
-		if !item.IsDir() {
-			if !strings.HasPrefix(item.Name(), ".") && item.Name() != lastAccessedVideoFilename && fileCounter == lastAccessedVideoCount {
-				lastAccessedVideoFilename = item.Name()
-				lastAccessedVideoCount += 1
-
-				zap.S().Debugf("lastAccessedVideoFilename: %s lastAccessedVideoCount: %d", lastAccessedVideoFilename, lastAccessedVideoCount)
-
-				dat, err := os.ReadFile("./bin/" + item.Name())
-				if err == io.EOF {
-					err = nil
+					continue MONITOR
 				}
-
-				payload := &Payload{
-					ID:      ingestID,
-					FrameNo: frameCount, // * frameSize,
-					Data:    dat,
-				}
-
-				zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
-				videoSendWaitGroup.Add(1)
-				vs.ks.PayloadQueue() <- payload
-
-				fileCounter++
+			case err := <-watcher.Errors:
+				log.Println("Error:", err)
 			}
 		}
+	}()
+
+	err = watcher.Add("./bin")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	log.Println("Closing Monitor...")
+	<-done
 }
 
 func getIngestIDFromURL(rtmpURL string) string {

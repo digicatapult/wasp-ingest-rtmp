@@ -28,9 +28,10 @@ func setupProducer(kafkaBrokers []string) (sarama.SyncProducer, error) {
 }
 
 func main() {
-	var rtmpURL string
+	var rtmpURL, outputDir string
 
-	flag.StringVar(&rtmpURL, "rtmp", "default", "The url of the rtmp stream to ingest")
+	flag.StringVar(&rtmpURL, "rtmp", "rtmp://localhost:1935/stream/test", "The url of the rtmp stream to ingest")
+	flag.StringVar(&outputDir, "outputDir", "/tmp/wasp-videos", "The directory to output videos to")
 	flag.Parse()
 
 	cfg := zap.NewDevelopmentConfig()
@@ -53,7 +54,7 @@ func main() {
 	}
 
 	defer func() {
-		err := logger.Sync()
+		err = logger.Sync()
 		if err != nil {
 			log.Printf("error whilst syncing zap: %s\n", err)
 		}
@@ -73,13 +74,18 @@ func main() {
 	}
 
 	defer func() {
-		if err := producer.Close(); err != nil {
+		if err = producer.Close(); err != nil {
 			zap.S().Fatal(err)
 		}
 	}()
 
 	kafka := services.NewKafkaService(producer)
 
-	videoIngest := services.NewVideoIngestService(kafka)
+	err = util.CheckAndCreate(outputDir)
+	if err != nil {
+		zap.S().Fatalf("unable to create video directory '%s': %s", outputDir, err)
+	}
+
+	videoIngest := services.NewVideoIngestService(outputDir, kafka)
 	videoIngest.IngestVideo(rtmpURL)
 }

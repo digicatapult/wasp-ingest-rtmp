@@ -19,7 +19,7 @@ type Payload struct {
 	Filename    string
 	Type        string
 	Data        []byte `json:"-"`
-	EncodedData string `json:"Data"`
+	EncodedData string `json:"data"`
 }
 
 // KafkaOperations defines operations for kafka messaging

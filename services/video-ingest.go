@@ -1,8 +1,9 @@
 package services
 
 import (
-	"errors"
-	"io"
+	"github.com/fsnotify/fsnotify"
+	"io/ioutil"
+	"log"
 	"net/url"
 	"strings"
 	"sync"
@@ -25,7 +26,6 @@ func NewVideoIngestService(ks KafkaOperations) *VideoIngestService {
 
 // IngestVideo will ingest a video
 func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
-	pipeReader, pipeWriter := io.Pipe()
 	videoSendWaitGroup := &sync.WaitGroup{}
 
 	shutdown := make(chan bool)
@@ -39,23 +39,17 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 		return
 	}
 
-	go vs.consumeVideo(ingestID, pipeReader, videoSendWaitGroup)
+	go vs.consumeVideo(ingestID, videoSendWaitGroup)
 
 	done := make(chan error)
 
-	const groupOfPictureSize = 52
-
 	go func() {
+		// segmented files that are also fragmented
 		err := ffmpeg.Input(rtmpURL).
-			Output("pipe:", ffmpeg.KwArgs{
-				"f":         "h264",
-				"c:v":       "libx264",
-				"c:a":       "aac",
-				"profile:v": "baseline",
-				"movflags":  "frag_keyframe+empty_moov",
-				"g":         groupOfPictureSize,
+			Output("./bin/my_frag_bunny_%03d.mp4", ffmpeg.KwArgs{
+				"f":                      "segment",
+				"segment_format_options": "movflags=frag_keyframe+empty_moov+faststart",
 			}).
-			WithOutput(pipeWriter).
 			Run()
 		if err != nil {
 			zap.S().Fatalf("problem with ffmpeg: %v", err)
@@ -69,43 +63,70 @@ func (vs *VideoIngestService) IngestVideo(rtmpURL string) {
 	shutdown <- true
 }
 
-func (vs *VideoIngestService) consumeVideo(ingestID string, reader io.Reader, videoSendWaitGroup *sync.WaitGroup) {
-	frameSize := 1000
-	frameCount := 0
-	buf := make([]byte, frameSize)
+// payloadQueueSender send message via payload channel
+func (vs *VideoIngestService) payloadQueueSender(ingestID string, filePath string, videoSendWaitGroup *sync.WaitGroup) {
+	fileByteArray, err := ioutil.ReadFile(filePath)
+	if err != nil {
+		log.Fatal(err)
+	}
+	zap.S().Debugf("Video file byte array length: %d", len(fileByteArray))
 
-	for {
-		count, err := io.ReadFull(reader, buf)
-		frameCount++
+	payload := &Payload{
+		ID:      ingestID,
+		FrameNo: 0,
+		Data:    fileByteArray,
+	}
 
-		switch {
-		case count == 0 || errors.Is(err, io.EOF):
-			zap.S().Debug("end of stream reached")
+	zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
+	videoSendWaitGroup.Add(1)
+	vs.ks.PayloadQueue() <- payload
+}
 
-			return
-		case count != frameSize:
-			zap.S().Infof("end of stream reached, sending short chunk: %d, %s", count, err)
-		case err != nil:
-			zap.S().Errorf("read error: %d, %s", count, err)
+// ignore the first file as this can be too large sometimes...
+var previousVideoFilePath = "bin/my_frag_bunny_000.mp4"
 
-			if count == 0 {
-				return
+func (vs *VideoIngestService) consumeVideo(ingestID string, videoSendWaitGroup *sync.WaitGroup) {
+	zap.S().Debugf("consumeVideo called...")
+
+	watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer watcher.Close()
+
+	done := make(chan bool)
+
+	go func() {
+	MONITOR:
+		for {
+			select {
+			case event := <-watcher.Events:
+				switch event.Op {
+				case fsnotify.Write:
+					if event.Op&fsnotify.Write == fsnotify.Write {
+						zap.S().Debugf("modified file: %s", event.Name)
+						zap.S().Debugf("previousVideoFilePath: %s", previousVideoFilePath)
+
+						if event.Name != "bin/.DS_Store" && event.Name != previousVideoFilePath {
+							vs.payloadQueueSender(ingestID, event.Name, videoSendWaitGroup)
+						}
+					}
+
+					continue MONITOR
+				}
+			case err := <-watcher.Errors:
+				log.Println("Error:", err)
 			}
 		}
+	}()
 
-		bufCopy := make([]byte, frameSize)
-		copy(bufCopy, buf)
-
-		payload := &Payload{
-			ID:      ingestID,
-			FrameNo: frameCount * frameSize,
-			Data:    bufCopy,
-		}
-
-		zap.S().Debugf("Video chunk: %d - %d", payload.FrameNo, len(payload.Data))
-		videoSendWaitGroup.Add(1)
-		vs.ks.PayloadQueue() <- payload
+	err = watcher.Add("./bin")
+	if err != nil {
+		log.Fatal(err)
 	}
+
+	log.Println("Closing Monitor...")
+	<-done
 }
 
 func getIngestIDFromURL(rtmpURL string) string {
